@@ -1,0 +1,53 @@
+#!/usr/bin/python
+
+import argparse
+import logging
+import logging.config
+from imap_filter_client.filter_process import FilterProcessor
+from imap_filter_client.config import config
+
+if config is None:
+    exit()
+
+if 'logger' in config:
+    logging.config.dictConfig(config['logger'])
+
+logger = logging.getLogger('imap_filter_client')
+
+parser = argparse.ArgumentParser()
+
+sub = parser.add_subparsers(dest = "command")
+sub.required = True
+
+commands_desc = [
+    dict(name = 'start'),
+    dict(name = 'stop'),
+    dict(name = 'restart'),
+    dict(name = 'status'),
+]
+
+command_2_func = {}
+
+for name in dir(FilterProcessor):
+    attr = getattr(FilterProcessor, name)
+    if hasattr(attr, '_command_line'):
+        commands_desc.append(attr._command_line)
+
+for command in commands_desc:
+    command_2_func[command['name']] = command.get('func', command['name'])
+    sub_parser = sub.add_parser(command['name'], help = command.get('help', command['name']))
+    for arg_desc in command.get('arguments', []):
+        name = arg_desc['name']
+        del arg_desc['name']
+        if type(name) is not tuple:
+            name = (name,)
+        sub_parser.add_argument(*name, **arg_desc)
+
+args = parser.parse_args()
+
+processor = FilterProcessor('/tmp/imap_filter_client.pid', logger, config)
+command = getattr(processor, command_2_func[args.command])
+params = args.__dict__
+del params['command']
+result = command(**params)
+print(result)
