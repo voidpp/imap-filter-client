@@ -5,7 +5,6 @@
     - spam found / day
     - uptime
 - quicker passwd (de)crypter
-- supress "Idle check response: 'Still here'"
 - get stat cli comand
 - reload cli: check config file checksum, reload if changed
 

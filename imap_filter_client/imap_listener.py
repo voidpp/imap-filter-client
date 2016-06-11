@@ -38,7 +38,8 @@ class IMAPListener(Thread):
 
             server.idle_done()
 
-            logger.debug("Idle check response: %s", response)
+            if not len(response) or response[0][1] != b'Still here':
+                logger.debug("Idle check response: %s", response)
 
             if not len(response):
                 continue
