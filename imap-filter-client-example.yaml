@@ -1,9 +1,12 @@
 servers:
   server1:
+    # remote host
     host: server1.com
+    # remote port (if null, default ports will be used)
+    port: null
     ssl: true
     username: username_in_server1
-    # create cryped password with `passwd-encrypt passwd`
+    # create crypted password with `imap-filter-client passwd-encrypt passwd`
     password: cryped_password
     # not recommended
     password_plain: passwd
