@@ -2,7 +2,6 @@ import logging
 import imapclient
 import imaplib
 from backports import ssl
-from .passwd import decode
 
 logger = logging.getLogger(__name__)
 
@@ -14,14 +13,11 @@ class IMAPServer(object):
         self.__server = None
         self.__name = name
         self.__readonly = readonly
+        self.__folder = config.folder
 
     @property
     def host(self):
-        return self.__config['host']
-
-    @property
-    def port(self):
-        return self.__config['port']
+        return self.__config.host
 
     @property
     def name(self):
@@ -40,7 +36,7 @@ class IMAPServer(object):
         if val == self.__readonly:
             return
         self.__readonly = val
-        self.set_folder(self.__config['folder'], val)
+        self.set_folder(self.__config.folder, val)
 
     def alive(self):
         try:
@@ -50,7 +46,7 @@ class IMAPServer(object):
             self.connect()
 
     def set_folder(self, folder, readonly = False):
-        self.__config['folder'] = folder
+        self.__folder = folder
         self.__readonly = readonly
         info = self.__server.select_folder(folder, readonly = self.__readonly)
         return info[b'UIDNEXT'] - 1
@@ -58,22 +54,22 @@ class IMAPServer(object):
     def connect(self):
         params = dict(
             use_uid = True,
-            ssl = self.__config['ssl'],
+            ssl = self.__config.ssl,
         )
 
-        if self.__config['ssl']:
+        if self.__config.ssl:
             context = imapclient.create_default_context()
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
             params['ssl_context'] = context
 
-        logger.debug("Decrypting password...")
-        password = self.__config['password_plain'] if 'password_plain' in self.__config else decode(self.__config['password'])
+        if self.__config.port:
+            params['port'] = self.__config.port
 
-        self.__server = imapclient.IMAPClient(self.__config['host'], **params)
-        self.__server.login(self.__config['username'], password)
-        last_uid = self.set_folder(self.__config['folder'])
+        self.__server = imapclient.IMAPClient(self.__config.host, **params)
+        self.__server.login(self.__config.username, self.__config.password)
+        last_uid = self.set_folder(self.__folder)
 
-        logger.info("Connect and login %s is successfull. Last uid is %s", self.__config['host'], last_uid)
+        logger.info("Connect and login %s is successfull. Last uid is %s", self.__config.host, last_uid)
 
         return last_uid

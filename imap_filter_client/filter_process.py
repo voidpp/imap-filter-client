@@ -16,6 +16,7 @@ from .imap_server_pool import ImapServerPool
 from .passwd import encode
 from .imap_server import ALL_IMAP_FIELD
 from .message import Message
+from .server_config import ServerConfig
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,8 @@ class FilterProcessor(RemoteControllerDeamon):
     def __init__(self, pid, logger, config):
         super(FilterProcessor, self).__init__(pid, logger)
         self.__config = config
-        self.__sever_pool = ImapServerPool(self.__config['servers'])
+        self.__servers = {name: ServerConfig(data) for name, data in self.__config['servers'].items()}
+        self.__sever_pool = ImapServerPool(self.__servers)
         self.__processor = MessageProcessor(self.__sever_pool)
 
     @cli('passwd-encrypt', 'encrypt password for config', [dict(name = 'text')])
@@ -101,7 +103,7 @@ class FilterProcessor(RemoteControllerDeamon):
         return True
 
     def __create_listeners(self):
-        for name, config in list(self.__config['servers'].items()):
+        for name, config in self.__servers.items():
             listener = IMAPListener(config, name, self.__processor)
             listener.setDaemon(True)
             listener.start()
